@@ -4,7 +4,7 @@ from IPython.display import FileLink
 
 # 1️⃣ 设置 MIDI 文件目录
 midi_dir = "/remi_pop909/result/full_song/"
-zip_path = "/remi_pop90/midis.zip"
+zip_path = "/remi_pop909/midis.zip"
 
 # 2️⃣ 创建 ZIP 文件
 with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
