@@ -61,7 +61,7 @@ class PopMusicTransformer(object):
         self.global_step = tf.compat.v1.train.get_or_create_global_step()
         initializer = tf.compat.v1.initializers.random_normal(stddev=0.02, seed=None)
         proj_initializer = tf.compat.v1.initializers.random_normal(stddev=0.01, seed=None)
-        with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope()):
+        with tf.compat.v1.variable_scope(tf.compat.v1.get_variable_scope(),reuse=tf.compat.v1.AUTO_REUSE):
             xx = tf.transpose(self.x, [1, 0])
             yy = tf.transpose(self.y, [1, 0])
             loss, self.logits, self.new_mem = modules.transformer(
