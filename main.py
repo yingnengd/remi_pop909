@@ -153,6 +153,12 @@ import pickle
 from finetune import load_split_file
 import pretty_midi
 import numpy as np
+from huggingface_hub import login
+from huggingface_hub import snapshot_download
+from pathlib import Path
+
+TOKEN = "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"
+login(TOKEN)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -232,6 +238,19 @@ def main():
         if section == "CHORUS":
             chorus_candidates = []
 
+            BASE_DIR = Path(".")
+            BASE_DIR.mkdir(exist_ok=True)
+            
+            repo_id = "yingnengd/REMI-chord-melody"  # Hugging Face 仓库路径
+            
+            local_model_path = snapshot_download(
+                repo_id=repo_id,
+                local_dir=BASE_DIR / "REMI-chord-melody",
+                token=TOKEN
+            )
+            print("✅ 模型下载/缓存完成:", local_model_path)
+
+
             chkpt_name = 'REMI-chord-melody'
             print("[INFO] Loading model...")
             model = PopMusicTransformer(
@@ -277,6 +296,18 @@ def main():
         # =========================
         if section in ("CHORUS2", "FINAL_CHORUS") and best_chorus_midi:
 
+            BASE_DIR = Path(".")
+            BASE_DIR.mkdir(exist_ok=True)
+            
+            repo_id = "yingnengd/REMI-chord-melody"  # Hugging Face 仓库路径
+            
+            local_model_path = snapshot_download(
+                repo_id=repo_id,
+                local_dir=BASE_DIR / "REMI-chord-melody",
+                token=TOKEN
+            )
+            print("✅ 模型下载/缓存完成:", local_model_path)
+
             chkpt_name = 'REMI-chord-melody'
             print("[INFO] Loading model...")
             model = PopMusicTransformer(
@@ -314,6 +345,18 @@ def main():
             f"{idx:02d}_{section}_{bars}bars_{datetime.now().strftime('%H%M%S')}.mid"
         )
 
+        BASE_DIR = Path(".")
+        BASE_DIR.mkdir(exist_ok=True)
+            
+        repo_id = "yingnengd/REMI-chord"  # Hugging Face 仓库路径
+            
+        local_model_path = snapshot_download(
+            repo_id=repo_id,
+            local_dir=BASE_DIR / "REMI-chord",
+            token=TOKEN
+        )
+        print("✅ 模型下载/缓存完成:", local_model_path)
+
         chkpt_name = 'REMI-chord'
         print("[INFO] Loading model...")
         model = PopMusicTransformer(
@@ -350,6 +393,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
