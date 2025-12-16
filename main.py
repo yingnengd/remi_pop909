@@ -18,6 +18,19 @@ def main():
 
     chkpt_name = 'REMI-chord-melody' if args.only_melody else "REMI-chord"
     n_target_bar = int(args.len)
+            
+    repo_id = "yingnengd/REMI-chord-melody" if args.only_melody else "yingnengd/REMI-chord"
+            
+    local_model_path = snapshot_download(
+        repo_id=repo_id,
+        local_dir=BASE_DIR / "REMI-chord-melody",
+        token=TOKEN
+    )
+    print("✅ 模型下载/缓存完成:", local_model_path)
+
+
+    chkpt_name = 'REMI-chord-melody' if args.only_melody else "REMI-chord"
+    print("[INFO] Loading model...")
 
     # declare model
     model = PopMusicTransformer(
@@ -54,3 +67,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
