@@ -10,7 +10,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--len", help="the generation length")
-    parser.add_argument("-n", default=1, help="how many sample to generate")
+    parser.add_argument("--n", default=1, help="how many sample to generate")
     parser.add_argument("--only-melody", action="store_true")
     parser.add_argument("--prompt", help="the prompt midi path")
     parser.add_argument("--prompt-chord", help="the chord of prompt midi path")
@@ -67,4 +67,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
