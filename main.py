@@ -29,6 +29,9 @@ def main():
     n_target_bar = int(args.len)
             
     repo_id = "yingnengd/REMI-chord-melody" if args.only_melody else "yingnengd/REMI-chord"
+
+    BASE_DIR = Path(".")
+    BASE_DIR.mkdir(exist_ok=True)
             
     local_model_path = snapshot_download(
         repo_id=repo_id,
@@ -76,6 +79,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 
