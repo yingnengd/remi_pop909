@@ -202,26 +202,19 @@ def score_chorus(midi_path):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--len", help="the generation length")
-    parser.add_argument("-n", default=1, help="how many sample to generate")
-    parser.add_argument("--only-melody", action="store_true")
-    parser.add_argument("--prompt", help="the prompt midi path")
-    parser.add_argument("--prompt-chord", help="the chord of prompt midi path")
-    args = parser.parse_args()
-
-    chkpt_name = 'REMI-chord-melody' if args.only_melody else "REMI-chord"
-    n_target_bar = int(args.len)
-
+    #chkpt_name = 'REMI-chord-melody' if args.only_melody else "REMI-chord"
+    #n_target_bar = int(args.len)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(CHORUS_CAND_DIR, exist_ok=True)
-
+    
+'''
     print("[INFO] Loading model...")
     model = PopMusicTransformer(
         checkpoint=chkpt_name,
         is_training=False
     )
     print("[INFO] Model loaded.\n")
+'''
 
     last_midi = None
     best_chorus_midi = None
@@ -238,6 +231,14 @@ def main():
         # =========================
         if section == "CHORUS":
             chorus_candidates = []
+
+            chkpt_name = 'REMI-chord-melody'
+            print("[INFO] Loading model...")
+            model = PopMusicTransformer(
+                checkpoint=chkpt_name,
+                is_training=False
+            )
+            print("[INFO] Model loaded.\n")
 
             for i in range(5):
                 out = os.path.join(
@@ -275,6 +276,15 @@ def main():
         # 后续副歌直接复用最佳 Hook
         # =========================
         if section in ("CHORUS2", "FINAL_CHORUS") and best_chorus_midi:
+
+            chkpt_name = 'REMI-chord-melody'
+            print("[INFO] Loading model...")
+            model = PopMusicTransformer(
+                checkpoint=chkpt_name,
+                is_training=False
+            )
+            print("[INFO] Model loaded.\n")
+
             out_midi = os.path.join(
                 OUTPUT_DIR,
                 f"{idx:02d}_{section}_{bars}bars_{datetime.now().strftime('%H%M%S')}.mid"
@@ -303,6 +313,14 @@ def main():
             OUTPUT_DIR,
             f"{idx:02d}_{section}_{bars}bars_{datetime.now().strftime('%H%M%S')}.mid"
         )
+
+        chkpt_name = 'REMI-chord'
+        print("[INFO] Loading model...")
+        model = PopMusicTransformer(
+            checkpoint=chkpt_name,
+            is_training=False
+        )
+        print("[INFO] Model loaded.\n")
 
         prompt_paths = None
         if last_midi:
