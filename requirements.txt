@@ -17,3 +17,5 @@ six>=1.15
 miditoolkit==0.1.16
 
 matplotlib==3.5.3
+
+mir_eval==0.7
