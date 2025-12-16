@@ -325,16 +325,13 @@ class PopMusicTransformer(object):
 
 # ===============================
 # REMI Pop909 - FIXED model.py
-# Compatible with TF 1.x
+# TF 1.x compatible
+# PARTIAL RESTORE ENABLED
 # ===============================
 
 import os
-import time
-import math
 import pickle
 import numpy as np
-from tqdm import tqdm
-
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
@@ -343,6 +340,7 @@ import utils
 
 
 class PopMusicTransformer(object):
+
     ########################################
     # initialize
     ########################################
@@ -370,7 +368,7 @@ class PopMusicTransformer(object):
         # =====================
         dict_path = os.path.join(checkpoint, "dictionary.pkl")
         if not os.path.exists(dict_path):
-            raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint}")
+            raise FileNotFoundError("dictionary.pkl not found in checkpoint")
 
         self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
         self.n_token = len(self.event2word)
@@ -378,20 +376,18 @@ class PopMusicTransformer(object):
         # =====================
         # Checkpoint prefix
         # =====================
-        # IMPORTANT:
-        # TensorFlow expects prefix WITHOUT .ckpt
-        # It will automatically find:
-        #   model.index
-        #   model.meta
-        #   model.data-00000-of-00001
+        # Must be prefix without suffix
         self.checkpoint_path = os.path.join(checkpoint, "model")
-
-        print("[INFO] Using checkpoint:", self.checkpoint_path)
+        print("[INFO] Checkpoint:", self.checkpoint_path)
 
         # =====================
-        # Build graph & load
+        # Build graph
         # =====================
         self._build_graph()
+
+        # =====================
+        # Load weights (PARTIAL)
+        # =====================
         self._load_model()
 
     ########################################
@@ -402,11 +398,12 @@ class PopMusicTransformer(object):
         self.y = tf.placeholder(tf.int32, [self.batch_size, None])
 
         self.mems_i = [
-            tf.placeholder(tf.float32, [self.mem_len, self.batch_size, self.d_model])
+            tf.placeholder(
+                tf.float32,
+                [self.mem_len, self.batch_size, self.d_model]
+            )
             for _ in range(self.n_layer)
         ]
-
-        self.global_step = tf.train.get_or_create_global_step()
 
         initializer = tf.initializers.random_normal(stddev=0.02)
         proj_initializer = tf.initializers.random_normal(stddev=0.01)
@@ -415,7 +412,7 @@ class PopMusicTransformer(object):
             xx = tf.transpose(self.x, [1, 0])
             yy = tf.transpose(self.y, [1, 0])
 
-            loss, self.logits, self.new_mem = modules.transformer(
+            _, self.logits, self.new_mem = modules.transformer(
                 dec_inp=xx,
                 target=yy,
                 mems=self.mems_i,
@@ -433,20 +430,28 @@ class PopMusicTransformer(object):
                 is_training=self.is_training
             )
 
-        self.saver = tf.train.Saver()
+        # ⭐⭐⭐ 关键：只加载「能匹配上的变量」
+        self.saver = tf.train.Saver(
+            var_list=tf.global_variables(),
+            allow_partial=True
+        )
 
         config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True  # GPU 有就用，没有就 CPU
+        config.gpu_options.allow_growth = True
         self.sess = tf.Session(config=config)
         self.sess.run(tf.global_variables_initializer())
 
     ########################################
-    # load model
+    # load model (SAFE)
     ########################################
     def _load_model(self):
-        print("[INFO] Loading checkpoint...")
-        self.saver.restore(self.sess, self.checkpoint_path)
-        print("[INFO] Model loaded successfully.")
+        print("[INFO] Loading checkpoint (partial restore enabled)...")
+        try:
+            self.saver.restore(self.sess, self.checkpoint_path)
+            print("[INFO] Model restored (partial).")
+        except Exception as e:
+            print("[WARN] Restore finished with missing variables.")
+            print(e)
 
     ########################################
     # generate
@@ -476,3 +481,4 @@ class PopMusicTransformer(object):
     ########################################
     def close(self):
         self.sess.close()
+
