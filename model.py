@@ -477,5 +477,5 @@ class PopMusicTransformer(object):
     # -------------------------------------------------
     def close(self):
         self.sess.close()
-    ‘’‘
+‘’‘
 
