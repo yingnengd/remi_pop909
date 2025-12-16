@@ -365,7 +365,7 @@ class PopMusicTransformer(object):
         # =====================
         # Load dictionary
         # =====================
-        dict_path = os.path.join(checkpoint_dir, "dictionary.pkl")
+        dict_path = os.path.join(checkpoint, "dictionary.pkl")
         if not os.path.exists(dict_path):
             raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint_dir}")
 
