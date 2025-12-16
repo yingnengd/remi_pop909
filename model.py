@@ -27,6 +27,22 @@ class PopMusicTransformer(object):
         self.d_head = self.d_model // self.n_head
         self.d_ff = 2048
         self.learning_rate = 0.0002
+
+        # load dictionary
+        self.dictionary_path = os.path.join(checkpoint, "dictionary.pkl")
+        self.event2word, self.word2event = pickle.load(
+            open(self.dictionary_path, "rb")
+        )
+        self.n_token = len(self.event2word)
+
+        # checkpoint prefix
+        self.checkpoint_path = os.path.join(checkpoint, "model")
+        print("[INFO] Using checkpoint:", self.checkpoint_path)
+
+        # build & load
+        self.load_model()
+        
+         '''
         # load model
         self.is_training = is_training
         if self.is_training:
@@ -41,22 +57,6 @@ class PopMusicTransformer(object):
                 if int(chkpt[6:9]) > self.last_epoch:
                     self.last_epoch = int(chkpt[6:9])
                     last_checkpoint = chkpt
-        '''
-        ckpt = tf.train.get_checkpoint_state(checkpoint)
-        if ckpt and ckpt.model_checkpoint_path:
-            self.checkpoint_path = ckpt.model_checkpoint_path
-            print("[INFO] Using checkpoint:", self.checkpoint_path)
-
-            self.dictionary_path = os.path.join(checkpoint, "dictionary.pkl")
-            self.event2word, self.word2event = pickle.load(
-                open(self.dictionary_path, "rb")
-            )
-            self.n_token = len(self.event2word)
-        else:
-            raise FileNotFoundError(
-                f"No valid checkpoint found in {checkpoint}"
-            )
-        '''
         if self.last_epoch != -1:
             self.dictionary_path = '{}/dictionary.pkl'.format(checkpoint)
             self.event2word, self.word2event = pickle.load(open(self.dictionary_path, 'rb'))
@@ -64,6 +64,7 @@ class PopMusicTransformer(object):
         self.checkpoint_path = '{}/{}'.format(checkpoint, last_checkpoint[:15])
         print(self.checkpoint_path)
         self.load_model()
+        '''
 
     ########################################
     # load model
