@@ -1,4 +1,4 @@
-'''#import tensorflow as tf
+#import tensorflow as tf
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import numpy as np
@@ -321,7 +321,8 @@ class PopMusicTransformer(object):
     ########################################
     def close(self):
         self.sess.close()
-    '''
+        
+'''
 
 # =====================================================
 # REMI Pop909 - model.py (TF1 SAFE RESTORE VERSION)
@@ -476,4 +477,5 @@ class PopMusicTransformer(object):
     # -------------------------------------------------
     def close(self):
         self.sess.close()
+    ‘’‘
 
