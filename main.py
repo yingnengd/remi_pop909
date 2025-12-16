@@ -212,16 +212,6 @@ def main():
     #n_target_bar = int(args.len)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(CHORUS_CAND_DIR, exist_ok=True)
-    
-'''
-    print("[INFO] Loading model...")
-    model = PopMusicTransformer(
-        checkpoint=chkpt_name,
-        is_training=False
-    )
-    print("[INFO] Model loaded.\n")
-'''
-
     last_midi = None
     best_chorus_midi = None
     section_midis = []
@@ -393,6 +383,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
