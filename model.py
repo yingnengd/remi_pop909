@@ -28,6 +28,12 @@ class PopMusicTransformer(object):
         self.d_ff = 2048
         self.learning_rate = 0.0002
 
+        self.is_training = is_training
+        if self.is_training:
+            self.batch_size = 4
+        else:
+            self.batch_size = 1
+
         # load dictionary
         self.dictionary_path = os.path.join(checkpoint, "dictionary.pkl")
         self.event2word, self.word2event = pickle.load(
