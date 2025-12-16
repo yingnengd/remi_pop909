@@ -1,8 +1,8 @@
 # ===== Core ML (REMI 必需) =====
-tensorflow==1.14.0
+tensorflow==2.12.0 
 
 # ===== 数值 & 科学计算 =====
-numpy>=1.16,<1.20
+numpy>=1.16,<1.24
 
 # ===== MIDI 处理 =====
 pretty_midi>=0.2.9
