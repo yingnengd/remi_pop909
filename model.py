@@ -424,7 +424,7 @@ class PopMusicTransformer(object):
                 initializer=initializer,
                 proj_initializer=proj_initializer,
                 is_training=self.is_training,
-                reuse=False
+                #reuse=False
             )
 
         # -------- session --------
