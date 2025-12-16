@@ -1,4 +1,5 @@
 #import tensorflow as tf
+'''
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 import numpy as np
@@ -321,5 +322,161 @@ class PopMusicTransformer(object):
     ########################################
     def close(self):
         self.sess.close
+    '''
+# ===============================
+# REMI Pop909 - FINAL FIXED model.py
+# TensorFlow 1.x compatible
+# NO checkpoint name parsing
+# ===============================
+
+import os
+import pickle
+import numpy as np
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+
+import modules
+import utils
+
+
+class PopMusicTransformer(object):
+
+    ########################################
+    # initialize
+    ########################################
+    def __init__(self, checkpoint_dir, is_training=False):
+        self.is_training = is_training
+
+        # =====================
+        # Model hyperparams
+        # =====================
+        self.x_len = 512
+        self.mem_len = 512
+        self.n_layer = 12
+        self.d_embed = 512
+        self.d_model = 512
+        self.dropout = 0.1
+        self.n_head = 8
+        self.d_head = self.d_model // self.n_head
+        self.d_ff = 2048
+
+        self.batch_size = 4 if is_training else 1
+
+        # =====================
+        # Load dictionary
+        # =====================
+        dict_path = os.path.join(checkpoint_dir, "dictionary.pkl")
+        if not os.path.exists(dict_path):
+            raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint_dir}")
+
+        self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
+        self.n_token = len(self.event2word)
+
+        # =====================
+        # FIXED checkpoint prefix
+        # =====================
+        # TensorFlow expects prefix WITHOUT suffix
+        # It will find:
+        #   model.index
+        #   model.meta
+        #   model.data-00000-of-00001
+        self.checkpoint_path = os.path.join(checkpoint_dir, "model")
+        print("[INFO] Using checkpoint:", self.checkpoint_path)
+
+        # =====================
+        # Build graph & load
+        # =====================
+        self._build_graph()
+        self._load_model()
+
+    ########################################
+    # build graph
+    ########################################
+    def _build_graph(self):
+        self.x = tf.placeholder(tf.int32, [self.batch_size, None])
+        self.y = tf.placeholder(tf.int32, [self.batch_size, None])
+
+        self.mems_i = [
+            tf.placeholder(
+                tf.float32,
+                [self.mem_len, self.batch_size, self.d_model]
+            )
+            for _ in range(self.n_layer)
+        ]
+
+        initializer = tf.initializers.random_normal(stddev=0.02)
+        proj_initializer = tf.initializers.random_normal(stddev=0.01)
+
+        with tf.variable_scope("model", reuse=False):
+            xx = tf.transpose(self.x, [1, 0])
+            yy = tf.transpose(self.y, [1, 0])
+
+            _, self.logits, self.new_mem = modules.transformer(
+                dec_inp=xx,
+                target=yy,
+                mems=self.mems_i,
+                n_token=self.n_token,
+                n_layer=self.n_layer,
+                d_model=self.d_model,
+                d_embed=self.d_embed,
+                n_head=self.n_head,
+                d_head=self.d_head,
+                d_inner=self.d_ff,
+                dropout=self.dropout,
+                dropatt=self.dropout,
+                initializer=initializer,
+                proj_initializer=proj_initializer,
+                is_training=self.is_training
+            )
+
+        self.saver = tf.train.Saver()
+
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = tf.Session(config=config)
+        self.sess.run(tf.global_variables_initializer())
+
+    ########################################
+    # load model
+    ########################################
+    def _load_model(self):
+        print("[INFO] Loading checkpoint...")
+        if not tf.train.checkpoint_exists(self.checkpoint_path):
+            raise FileNotFoundError(
+                f"Checkpoint not found: {self.checkpoint_path}*"
+            )
+
+        self.saver.restore(self.sess, self.checkpoint_path)
+        print("[INFO] Model restored successfully.")
+
+    ########################################
+    # generate
+    ########################################
+    def generate(
+        self,
+        n_target_bar,
+        temperature,
+        topk,
+        output_path,
+        prompt_paths=None
+    ):
+        utils.generate(
+            sess=self.sess,
+            model=self,
+            event2word=self.event2word,
+            word2event=self.word2event,
+            n_target_bar=n_target_bar,
+            temperature=temperature,
+            topk=topk,
+            output_path=output_path,
+            prompt_paths=prompt_paths
+        )
+
+    ########################################
+    # close
+    ########################################
+    def close(self):
+        self.sess.close()
+
         
 
