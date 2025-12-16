@@ -323,11 +323,9 @@ class PopMusicTransformer(object):
         self.sess.close()
     '''
 
-# ===============================
-# REMI Pop909 - FIXED model.py
-# TF 1.x compatible
-# PARTIAL RESTORE (SAFE)
-# ===============================
+# =====================================================
+# REMI Pop909 - model.py (TF1 SAFE RESTORE VERSION)
+# =====================================================
 
 import os
 import pickle
@@ -339,36 +337,13 @@ import modules
 import utils
 
 
-def build_partial_saver(checkpoint_path):
-    """
-    TF1-safe partial restore:
-    only restore variables that exist in checkpoint
-    """
-    reader = tf.train.NewCheckpointReader(checkpoint_path)
-    ckpt_vars = reader.get_variable_to_shape_map()
-
-    restore_vars = []
-    for v in tf.global_variables():
-        name = v.name.split(":")[0]
-        if name in ckpt_vars:
-            restore_vars.append(v)
-
-    print(f"[INFO] Variables in checkpoint: {len(ckpt_vars)}")
-    print(f"[INFO] Variables restored: {len(restore_vars)}")
-
-    return tf.train.Saver(var_list=restore_vars)
-
-
 class PopMusicTransformer(object):
 
-    ########################################
-    # initialize
-    ########################################
     def __init__(self, checkpoint, is_training=False):
         self.is_training = is_training
 
         # =====================
-        # Model hyperparams
+        # Hyperparameters
         # =====================
         self.x_len = 512
         self.mem_len = 512
@@ -379,7 +354,7 @@ class PopMusicTransformer(object):
         self.n_head = 8
         self.d_head = self.d_model // self.n_head
         self.d_ff = 2048
-        self.learning_rate = 0.0002
+        self.learning_rate = 2e-4
 
         self.batch_size = 4 if is_training else 1
 
@@ -388,48 +363,39 @@ class PopMusicTransformer(object):
         # =====================
         dict_path = os.path.join(checkpoint, "dictionary.pkl")
         if not os.path.exists(dict_path):
-            raise FileNotFoundError("dictionary.pkl not found in checkpoint")
+            raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint}")
 
-        self.event2word, self.word2event = pickle.load(
-            open(dict_path, "rb")
-        )
+        self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
         self.n_token = len(self.event2word)
 
         # =====================
-        # Checkpoint prefix (NO SUFFIX)
+        # Checkpoint prefix (NO suffix)
         # =====================
         self.checkpoint_path = os.path.join(checkpoint, "model")
-        print("[INFO] Checkpoint prefix:", self.checkpoint_path)
+        print("[INFO] Using checkpoint:", self.checkpoint_path)
 
         # =====================
-        # Build graph
+        # Build graph & load
         # =====================
         self._build_graph()
-
-        # =====================
-        # Load weights (PARTIAL, SAFE)
-        # =====================
         self._load_model()
 
-    ########################################
-    # build graph
-    ########################################
+    # -------------------------------------------------
+    # Build computation graph
+    # -------------------------------------------------
     def _build_graph(self):
         self.x = tf.placeholder(tf.int32, [self.batch_size, None])
         self.y = tf.placeholder(tf.int32, [self.batch_size, None])
 
         self.mems_i = [
-            tf.placeholder(
-                tf.float32,
-                [self.mem_len, self.batch_size, self.d_model]
-            )
+            tf.placeholder(tf.float32, [self.mem_len, self.batch_size, self.d_model])
             for _ in range(self.n_layer)
         ]
 
         initializer = tf.initializers.random_normal(stddev=0.02)
         proj_initializer = tf.initializers.random_normal(stddev=0.01)
 
-        with tf.variable_scope("model", reuse=False):
+        with tf.variable_scope("transformer", reuse=False):
             xx = tf.transpose(self.x, [1, 0])
             yy = tf.transpose(self.y, [1, 0])
 
@@ -456,20 +422,35 @@ class PopMusicTransformer(object):
         self.sess = tf.Session(config=config)
         self.sess.run(tf.global_variables_initializer())
 
-    ########################################
-    # load model (TF1 SAFE PARTIAL)
-    ########################################
+    # -------------------------------------------------
+    # SAFE checkpoint restore (weights only)
+    # -------------------------------------------------
     def _load_model(self):
-        print("[INFO] Loading checkpoint (TF1 partial restore)...")
+        print("[INFO] Loading checkpoint (safe TF1 restore)...")
 
-        saver = build_partial_saver(self.checkpoint_path)
+        reader = tf.train.NewCheckpointReader(self.checkpoint_path)
+        ckpt_vars = reader.get_variable_to_shape_map()
+        print(f"[INFO] Variables in checkpoint: {len(ckpt_vars)}")
+
+        restore_vars = []
+        for v in tf.global_variables():
+            name = v.name.split(":")[0]
+            if name in ckpt_vars and "Adam" not in name:
+                restore_vars.append(v)
+
+        if len(restore_vars) == 0:
+            raise RuntimeError("No matching variables found to restore!")
+
+        print(f"[INFO] Variables restored: {len(restore_vars)}")
+
+        saver = tf.train.Saver(var_list=restore_vars)
         saver.restore(self.sess, self.checkpoint_path)
 
-        print("[INFO] Checkpoint loaded successfully.")
+        print("[INFO] Model weights restored successfully.")
 
-    ########################################
-    # generate
-    ########################################
+    # -------------------------------------------------
+    # Generate MIDI
+    # -------------------------------------------------
     def generate(
         self,
         n_target_bar,
@@ -490,9 +471,9 @@ class PopMusicTransformer(object):
             prompt_paths=prompt_paths
         )
 
-    ########################################
-    # close
-    ########################################
+    # -------------------------------------------------
+    # Close session
+    # -------------------------------------------------
     def close(self):
         self.sess.close()
 
