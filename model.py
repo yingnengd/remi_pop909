@@ -344,7 +344,7 @@ class PopMusicTransformer(object):
     ########################################
     # initialize
     ########################################
-    def __init__(self, checkpoint_dir, is_training=False):
+    def __init__(self, checkpoint, is_training=False):
         self.is_training = is_training
 
         # =====================
