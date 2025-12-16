@@ -341,9 +341,6 @@ import utils
 
 class PopMusicTransformer(object):
 
-    ########################################
-    # initialize
-    ########################################
     def __init__(self, checkpoint, is_training=False):
         self.is_training = is_training
 
@@ -359,7 +356,6 @@ class PopMusicTransformer(object):
         self.n_head = 8
         self.d_head = self.d_model // self.n_head
         self.d_ff = 2048
-
         self.batch_size = 4 if is_training else 1
 
         # =====================
@@ -373,61 +369,50 @@ class PopMusicTransformer(object):
         self.n_token = len(self.event2word)
 
         # =====================
-        # FIXED checkpoint prefix
+        # Checkpoint prefix
         # =====================
-        # TensorFlow expects prefix WITHOUT suffix
-        # It will find:
-        #   model.index
-        #   model.meta
-        #   model.data-00000-of-00001
         self.checkpoint_path = os.path.join(checkpoint, "model")
         print("[INFO] Using checkpoint:", self.checkpoint_path)
 
         # =====================
-        # Build graph & load
+        # Build & load
         # =====================
         self._build_graph()
         self._load_model()
 
-    ########################################
-    # build graph
-    ########################################
     def _build_graph(self):
         self.x = tf.placeholder(tf.int32, [self.batch_size, None])
         self.y = tf.placeholder(tf.int32, [self.batch_size, None])
 
         self.mems_i = [
-            tf.placeholder(
-                tf.float32,
-                [self.mem_len, self.batch_size, self.d_model]
-            )
+            tf.placeholder(tf.float32, [self.mem_len, self.batch_size, self.d_model])
             for _ in range(self.n_layer)
         ]
 
         initializer = tf.initializers.random_normal(stddev=0.02)
         proj_initializer = tf.initializers.random_normal(stddev=0.01)
 
-        with tf.variable_scope("model", reuse=False):
-            xx = tf.transpose(self.x, [1, 0])
-            yy = tf.transpose(self.y, [1, 0])
+        # ❗不要包 model scope
+        xx = tf.transpose(self.x, [1, 0])
+        yy = tf.transpose(self.y, [1, 0])
 
-            _, self.logits, self.new_mem = modules.transformer(
-                dec_inp=xx,
-                target=yy,
-                mems=self.mems_i,
-                n_token=self.n_token,
-                n_layer=self.n_layer,
-                d_model=self.d_model,
-                d_embed=self.d_embed,
-                n_head=self.n_head,
-                d_head=self.d_head,
-                d_inner=self.d_ff,
-                dropout=self.dropout,
-                dropatt=self.dropout,
-                initializer=initializer,
-                proj_initializer=proj_initializer,
-                is_training=self.is_training
-            )
+        _, self.logits, self.new_mem = modules.transformer(
+            dec_inp=xx,
+            target=yy,
+            mems=self.mems_i,
+            n_token=self.n_token,
+            n_layer=self.n_layer,
+            d_model=self.d_model,
+            d_embed=self.d_embed,
+            n_head=self.n_head,
+            d_head=self.d_head,
+            d_inner=self.d_ff,
+            dropout=self.dropout,
+            dropatt=self.dropout,
+            initializer=initializer,
+            proj_initializer=proj_initializer,
+            is_training=self.is_training
+        )
 
         self.saver = tf.train.Saver()
 
@@ -436,22 +421,14 @@ class PopMusicTransformer(object):
         self.sess = tf.Session(config=config)
         self.sess.run(tf.global_variables_initializer())
 
-    ########################################
-    # load model
-    ########################################
     def _load_model(self):
         print("[INFO] Loading checkpoint...")
         if not tf.train.checkpoint_exists(self.checkpoint_path):
-            raise FileNotFoundError(
-                f"Checkpoint not found: {self.checkpoint_path}*"
-            )
+            raise FileNotFoundError(f"Checkpoint not found: {self.checkpoint_path}*")
 
         self.saver.restore(self.sess, self.checkpoint_path)
         print("[INFO] Model restored successfully.")
 
-    ########################################
-    # generate
-    ########################################
     def generate(
         self,
         n_target_bar,
@@ -472,11 +449,5 @@ class PopMusicTransformer(object):
             prompt_paths=prompt_paths
         )
 
-    ########################################
-    # close
-    ########################################
     def close(self):
         self.sess.close()
-
-        
-
