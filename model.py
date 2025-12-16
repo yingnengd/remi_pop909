@@ -326,7 +326,7 @@ class PopMusicTransformer(object):
 # ===============================
 # REMI Pop909 - FIXED model.py
 # TF 1.x compatible
-# PARTIAL RESTORE ENABLED
+# PARTIAL RESTORE (SAFE)
 # ===============================
 
 import os
@@ -337,6 +337,26 @@ tf.disable_v2_behavior()
 
 import modules
 import utils
+
+
+def build_partial_saver(checkpoint_path):
+    """
+    TF1-safe partial restore:
+    only restore variables that exist in checkpoint
+    """
+    reader = tf.train.NewCheckpointReader(checkpoint_path)
+    ckpt_vars = reader.get_variable_to_shape_map()
+
+    restore_vars = []
+    for v in tf.global_variables():
+        name = v.name.split(":")[0]
+        if name in ckpt_vars:
+            restore_vars.append(v)
+
+    print(f"[INFO] Variables in checkpoint: {len(ckpt_vars)}")
+    print(f"[INFO] Variables restored: {len(restore_vars)}")
+
+    return tf.train.Saver(var_list=restore_vars)
 
 
 class PopMusicTransformer(object):
@@ -370,15 +390,16 @@ class PopMusicTransformer(object):
         if not os.path.exists(dict_path):
             raise FileNotFoundError("dictionary.pkl not found in checkpoint")
 
-        self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
+        self.event2word, self.word2event = pickle.load(
+            open(dict_path, "rb")
+        )
         self.n_token = len(self.event2word)
 
         # =====================
-        # Checkpoint prefix
+        # Checkpoint prefix (NO SUFFIX)
         # =====================
-        # Must be prefix without suffix
         self.checkpoint_path = os.path.join(checkpoint, "model")
-        print("[INFO] Checkpoint:", self.checkpoint_path)
+        print("[INFO] Checkpoint prefix:", self.checkpoint_path)
 
         # =====================
         # Build graph
@@ -386,7 +407,7 @@ class PopMusicTransformer(object):
         self._build_graph()
 
         # =====================
-        # Load weights (PARTIAL)
+        # Load weights (PARTIAL, SAFE)
         # =====================
         self._load_model()
 
@@ -430,28 +451,21 @@ class PopMusicTransformer(object):
                 is_training=self.is_training
             )
 
-        # ⭐⭐⭐ 关键：只加载「能匹配上的变量」
-        self.saver = tf.train.Saver(
-            var_list=tf.global_variables(),
-            allow_partial=True
-        )
-
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
         self.sess = tf.Session(config=config)
         self.sess.run(tf.global_variables_initializer())
 
     ########################################
-    # load model (SAFE)
+    # load model (TF1 SAFE PARTIAL)
     ########################################
     def _load_model(self):
-        print("[INFO] Loading checkpoint (partial restore enabled)...")
-        try:
-            self.saver.restore(self.sess, self.checkpoint_path)
-            print("[INFO] Model restored (partial).")
-        except Exception as e:
-            print("[WARN] Restore finished with missing variables.")
-            print(e)
+        print("[INFO] Loading checkpoint (TF1 partial restore)...")
+
+        saver = build_partial_saver(self.checkpoint_path)
+        saver.restore(self.sess, self.checkpoint_path)
+
+        print("[INFO] Checkpoint loaded successfully.")
 
     ########################################
     # generate
