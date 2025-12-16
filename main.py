@@ -141,10 +141,16 @@ if __name__ == "__main__":
     main()
 '''
 #=============================
+
+
+
+
 from model import PopMusicTransformer
 from datetime import datetime
 import os
 import argparse
+import pickle
+from finetune import load_split_file
 import pretty_midi
 import numpy as np
 
@@ -317,6 +323,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
