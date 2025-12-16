@@ -322,18 +322,24 @@ class PopMusicTransformer(object):
     def close(self):
         self.sess.close()
     '''
-#import tensorflow as tf
+
+# ===============================
+# REMI Pop909 - FIXED model.py
+# Compatible with TF 1.x
+# ===============================
+
+import os
+import time
+import math
+import pickle
+import numpy as np
+from tqdm import tqdm
+
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
-import numpy as np
-import math
 import modules
-import pickle
 import utils
-import time
-import os
-from tqdm import tqdm
 
 
 class PopMusicTransformer(object):
@@ -341,10 +347,11 @@ class PopMusicTransformer(object):
     # initialize
     ########################################
     def __init__(self, checkpoint, is_training=False):
+        self.is_training = is_training
 
-        # ===============================
-        # model hyper-parameters
-        # ===============================
+        # =====================
+        # Model hyperparams
+        # =====================
         self.x_len = 512
         self.mem_len = 512
         self.n_layer = 12
@@ -356,45 +363,46 @@ class PopMusicTransformer(object):
         self.d_ff = 2048
         self.learning_rate = 0.0002
 
-        self.is_training = is_training
         self.batch_size = 4 if is_training else 1
 
-        # ===============================
-        # load dictionary
-        # ===============================
-        self.dictionary_path = os.path.join(checkpoint, "dictionary.pkl")
-        if not os.path.exists(self.dictionary_path):
+        # =====================
+        # Load dictionary
+        # =====================
+        dict_path = os.path.join(checkpoint, "dictionary.pkl")
+        if not os.path.exists(dict_path):
             raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint}")
 
-        self.event2word, self.word2event = pickle.load(
-            open(self.dictionary_path, "rb")
-        )
+        self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
         self.n_token = len(self.event2word)
 
-        # ===============================
-        # checkpoint path (IMPORTANT)
-        # ===============================
-        # TensorFlow checkpoint prefix (no epoch parsing!)
-        self.checkpoint_path = os.path.join(checkpoint, "model.ckpt")
+        # =====================
+        # Checkpoint prefix
+        # =====================
+        # IMPORTANT:
+        # TensorFlow expects prefix WITHOUT .ckpt
+        # It will automatically find:
+        #   model.index
+        #   model.meta
+        #   model.data-00000-of-00001
+        self.checkpoint_path = os.path.join(checkpoint, "model")
+
         print("[INFO] Using checkpoint:", self.checkpoint_path)
 
-        # ===============================
-        # build & load model
-        # ===============================
-        self.load_model()
+        # =====================
+        # Build graph & load
+        # =====================
+        self._build_graph()
+        self._load_model()
 
     ########################################
-    # load model
+    # build graph
     ########################################
-    def load_model(self):
-
-        # -------- placeholders --------
-        self.x = tf.placeholder(tf.int32, shape=[self.batch_size, None])
-        self.y = tf.placeholder(tf.int32, shape=[self.batch_size, None])
+    def _build_graph(self):
+        self.x = tf.placeholder(tf.int32, [self.batch_size, None])
+        self.y = tf.placeholder(tf.int32, [self.batch_size, None])
 
         self.mems_i = [
-            tf.placeholder(tf.float32,
-                           [self.mem_len, self.batch_size, self.d_model])
+            tf.placeholder(tf.float32, [self.mem_len, self.batch_size, self.d_model])
             for _ in range(self.n_layer)
         ]
 
@@ -403,8 +411,7 @@ class PopMusicTransformer(object):
         initializer = tf.initializers.random_normal(stddev=0.02)
         proj_initializer = tf.initializers.random_normal(stddev=0.01)
 
-        with tf.variable_scope(tf.get_variable_scope()):
-
+        with tf.variable_scope("model", reuse=False):
             xx = tf.transpose(self.x, [1, 0])
             yy = tf.transpose(self.y, [1, 0])
 
@@ -423,43 +430,49 @@ class PopMusicTransformer(object):
                 dropatt=self.dropout,
                 initializer=initializer,
                 proj_initializer=proj_initializer,
-                is_training=self.is_training,
-                #reuse=False
+                is_training=self.is_training
             )
 
-        # -------- session --------
-        self.sess = tf.Session(
-            config=tf.ConfigProto(
-                allow_soft_placement=True,
-                gpu_options=tf.GPUOptions(allow_growth=True)
-            )
-        )
+        self.saver = tf.train.Saver()
 
-        self.saver = tf.train.Saver(tf.global_variables())
-
-        # -------- restore --------
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True  # GPU 有就用，没有就 CPU
+        self.sess = tf.Session(config=config)
         self.sess.run(tf.global_variables_initializer())
 
-        if tf.train.checkpoint_exists(self.checkpoint_path):
-            self.saver.restore(self.sess, self.checkpoint_path)
-            print("[INFO] Checkpoint loaded successfully.")
-        else:
-            raise FileNotFoundError(
-                f"Checkpoint not found: {self.checkpoint_path}"
-            )
+    ########################################
+    # load model
+    ########################################
+    def _load_model(self):
+        print("[INFO] Loading checkpoint...")
+        self.saver.restore(self.sess, self.checkpoint_path)
+        print("[INFO] Model loaded successfully.")
 
     ########################################
-    # inference step
+    # generate
     ########################################
-    def inference(self, x, mems):
-
-        feed_dict = {self.x: x}
-        for i in range(self.n_layer):
-            feed_dict[self.mems_i[i]] = mems[i]
-
-        logits, new_mems = self.sess.run(
-            [self.logits, self.new_mem],
-            feed_dict=feed_dict
+    def generate(
+        self,
+        n_target_bar,
+        temperature,
+        topk,
+        output_path,
+        prompt_paths=None
+    ):
+        utils.generate(
+            sess=self.sess,
+            model=self,
+            event2word=self.event2word,
+            word2event=self.word2event,
+            n_target_bar=n_target_bar,
+            temperature=temperature,
+            topk=topk,
+            output_path=output_path,
+            prompt_paths=prompt_paths
         )
 
-        return logits, new_mems
+    ########################################
+    # close
+    ########################################
+    def close(self):
+        self.sess.close()
