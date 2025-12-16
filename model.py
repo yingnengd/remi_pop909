@@ -320,10 +320,10 @@ class PopMusicTransformer(object):
     # close
     ########################################
     def close(self):
-        self.sess.close()
+        self.sess.close
+        
         
 '''
-
 # =====================================================
 # REMI Pop909 - model.py (TF1 SAFE RESTORE VERSION)
 # =====================================================
