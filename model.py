@@ -321,6 +321,6 @@ class PopMusicTransformer(object):
     # close
     ########################################
     def close(self):
-        self.sess.close
+        self.sess.close()
 
 
