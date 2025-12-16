@@ -92,20 +92,30 @@ class PopMusicTransformer(object):
                 untie_r=False,
                 proj_same_dim=True)
         self.avg_loss = tf.reduce_mean(loss)
-         # 只加载模型权重，不加载优化器状态
+        # vars
         all_vars = tf.compat.v1.trainable_variables()
-        self.saver = tf.compat.v1.train.Saver(var_list=all_vars)
-    
-        # Session 配置
+        grads = tf.gradients(self.avg_loss, all_vars)
+        grads_and_vars = list(zip(grads, all_vars))
+        all_trainable_vars = tf.reduce_sum([tf.reduce_prod(v.shape) for v in tf.compat.v1.trainable_variables()])
+        # optimizer
+        decay_lr = tf.compat.v1.train.cosine_decay(
+            self.learning_rate,
+            global_step=self.global_step,
+            decay_steps=400000,
+            alpha=0.004)
+        optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=decay_lr)
+        self.train_op = optimizer.apply_gradients(grads_and_vars, self.global_step)
+        # saver
+        self.saver = tf.compat.v1.train.Saver()
         config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
         self.sess = tf.compat.v1.Session(config=config)
-    
+        # if self.is_training: self.sess.run(tf.compat.v1.initialize_all_variables())
         if os.path.exists(self.checkpoint_path + ".index"):
             self.saver.restore(self.sess, self.checkpoint_path)
             print("model loaded...")
         else:
-            self.sess.run(tf.compat.v1.global_variables_initializer())
+            self.sess.run(tf.compat.v1.initialize_all_variables())
             print("training from scratch...")
 
     ########################################
