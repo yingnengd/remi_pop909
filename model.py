@@ -367,7 +367,7 @@ class PopMusicTransformer(object):
         # =====================
         dict_path = os.path.join(checkpoint, "dictionary.pkl")
         if not os.path.exists(dict_path):
-            raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint_dir}")
+            raise FileNotFoundError(f"dictionary.pkl not found in {checkpoint}")
 
         self.event2word, self.word2event = pickle.load(open(dict_path, "rb"))
         self.n_token = len(self.event2word)
@@ -380,7 +380,7 @@ class PopMusicTransformer(object):
         #   model.index
         #   model.meta
         #   model.data-00000-of-00001
-        self.checkpoint_path = os.path.join(checkpoint_dir, "model")
+        self.checkpoint_path = os.path.join(checkpoint, "model")
         print("[INFO] Using checkpoint:", self.checkpoint_path)
 
         # =====================
