@@ -157,7 +157,7 @@ from huggingface_hub import login
 from huggingface_hub import snapshot_download
 from pathlib import Path
 
-TOKEN = "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"
+TOKEN = os.getenv("HF_TOKEN")
 login(TOKEN)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -383,6 +383,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
