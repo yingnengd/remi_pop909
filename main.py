@@ -202,10 +202,19 @@ def score_chorus(midi_path):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--len", help="the generation length")
+    parser.add_argument("-n", default=1, help="how many sample to generate")
+    parser.add_argument("--only-melody", action="store_true")
+    parser.add_argument("--prompt", help="the prompt midi path")
+    parser.add_argument("--prompt-chord", help="the chord of prompt midi path")
+    args = parser.parse_args()
+
+    chkpt_name = 'REMI-chord-melody' if args.only_melody else "REMI-chord"
+    n_target_bar = int(args.len)
+
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     os.makedirs(CHORUS_CAND_DIR, exist_ok=True)
-
-    chkpt_name = "REMI-chord"  # 或 REMI-chord-melody
 
     print("[INFO] Loading model...")
     model = PopMusicTransformer(
@@ -323,6 +332,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
