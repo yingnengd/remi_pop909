@@ -170,7 +170,7 @@ class PopMusicTransformer(object):
                 ws = [self.event2word['Bar_None']]
                 if 'chord' in self.checkpoint_path:
                     ws.append(self.event2word['Position_1/16'])
-                    ws.append(self.event2word['Chord_N:N'])
+                    #ws.append(self.event2word['Chord_N:N'])
                 else:
                     pass
                 words.append(ws)
