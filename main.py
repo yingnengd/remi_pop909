@@ -5,6 +5,15 @@ import argparse
 import pickle
 from finetune import load_split_file
 
+from huggingface_hub import login
+from huggingface_hub import snapshot_download
+#from pathlib import Path
+
+TOKEN = os.getenv("HF_TOKEN")
+login(TOKEN)
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def main():
@@ -67,5 +76,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
