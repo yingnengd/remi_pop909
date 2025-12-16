@@ -244,7 +244,7 @@ def main():
             chkpt_name = 'REMI-chord-melody'
             print("[INFO] Loading model...")
             model = PopMusicTransformer(
-                checkpoint_dir=checkpoint_path,
+                checkpoint_dir=chkpt_name,
                 is_training=False
             )
             print("[INFO] Model loaded.\n")
@@ -350,7 +350,7 @@ def main():
         chkpt_name = 'REMI-chord'
         print("[INFO] Loading model...")
         model = PopMusicTransformer(
-            checkpoint=chkpt_name,
+            checkpoint_dir=chkpt_name,
             is_training=False
         )
         print("[INFO] Model loaded.\n")
@@ -383,6 +383,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
