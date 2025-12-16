@@ -424,7 +424,7 @@ class PopMusicTransformer(object):
                 initializer=initializer,
                 proj_initializer=proj_initializer,
                 is_training=self.is_training,
-                #reuse=False
+                reuse=False
             )
 
         # -------- session --------
@@ -449,5 +449,17 @@ class PopMusicTransformer(object):
             )
 
     ########################################
-    #
+    # inference step
+    ########################################
+    def inference(self, x, mems):
 
+        feed_dict = {self.x: x}
+        for i in range(self.n_layer):
+            feed_dict[self.mems_i[i]] = mems[i]
+
+        logits, new_mems = self.sess.run(
+            [self.logits, self.new_mem],
+            feed_dict=feed_dict
+        )
+
+        return logits, new_mems
