@@ -42,29 +42,6 @@ class PopMusicTransformer(object):
         # build & load
         self.load_model()
         
-         '''
-        # load model
-        self.is_training = is_training
-        if self.is_training:
-            self.batch_size = 4
-        else:
-            self.batch_size = 1
-
-        self.last_epoch = -1
-        last_checkpoint = "model"
-        for chkpt in os.listdir(checkpoint):
-            if chkpt[:5] == "model" and chkpt[-5:] == "index":
-                if int(chkpt[6:9]) > self.last_epoch:
-                    self.last_epoch = int(chkpt[6:9])
-                    last_checkpoint = chkpt
-        if self.last_epoch != -1:
-            self.dictionary_path = '{}/dictionary.pkl'.format(checkpoint)
-            self.event2word, self.word2event = pickle.load(open(self.dictionary_path, 'rb'))
-            self.n_token = len(self.event2word)
-        self.checkpoint_path = '{}/{}'.format(checkpoint, last_checkpoint[:15])
-        print(self.checkpoint_path)
-        self.load_model()
-        '''
 
     ########################################
     # load model
