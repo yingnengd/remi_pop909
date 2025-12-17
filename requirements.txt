@@ -1,5 +1,5 @@
 # ===== Core ML (REMI 必需) =====
-tensorflow==2.12.0 
+tensorflow-gpu==1.14.0
 
 # ===== 数值 & 科学计算 =====
 numpy>=1.16,<1.24
@@ -14,10 +14,8 @@ tqdm>=4.45
 # ===== 文件与工具 =====
 six>=1.15
 
-miditoolkit==0.1.16
+miditoolkit
 
 matplotlib==3.5.3
 
 mir_eval==0.7
-
-huggingface_hub==0.19.4
